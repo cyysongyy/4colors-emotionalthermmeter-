@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校園心靈導航者：四色情緒溫度計整合遊戲</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #fefbf3;
+            --text-color: #4338ca;
+            --red-color: #dc2626;
+            --orange-color: #ea580c;
+            --green-color: #16a34a;
+            --blue-color: #2563eb;
+        }
+
+        * { box-sizing: border-box; font-family: "Microsoft JhengHei", sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #fefbc3, #fef08a);
+            margin: 0; padding: 20px;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; transition: background 0.5s ease;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px; padding: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%; max-width: 650px; min-height: 500px;
+            display: flex; flex-direction: column; position: relative;
+        }
+
+        h1, h2 { text-align: center; color: #1e3a8a; margin-top: 0; }
+
+        .screen { display: none; flex-direction: column; height: 100%; animation: fadeIn 0.4s ease; }
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10deg); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 頂部進度條 */
+        .score-pill {
+            background: #f1f5f9; padding: 10px 20px; border-radius: 50px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold; font-size: 14px; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .dot-row { display: flex; gap: 8px; }
+        .dot { width: 14px; height: 14px; border-radius: 50%; background: #cbd5e1; transition: all 0.3s ease; }
+        .dot.done { background: #22c55e; transform: scale(1.1); }
+
+        /* 按鈕基礎樣式 */
+        .btn {
+            background: #3b82f6; color: white; border: none; padding: 12px 24px;
+            border-radius: 12px; font-size: 16px; cursor: pointer; font-weight: bold;
+            transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(59,130,246,0.2);
+            text-align: center; margin-top: 15px; width: 100%;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(59,130,246,0.3); }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* QR Code 區塊樣式 */
+        .qr-section {
+            text-align: center; margin-top: 20px; padding-top: 15px;
+            border-top: 1px dashed #cbd5e1;
+        }
+        .qr-container {
+            display: inline-block; padding: 10px; background: white;
+            border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 6px;
+        }
+        .qr-container img { display: block; margin: 0 auto; border-radius: 6px; }
+        .qr-label { font-size: 13px; color: #64748b; font-weight: bold; margin: 4px 0 2px; }
+        .qr-url { font-size: 11px; color: #94a3b8; word-break: break-all; font-family: monospace; }
+
+        /* 島嶼選擇畫面 */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .island-btn {
+            border: none; border-radius: 16px; padding: 25px 15px; color: white;
+            font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.2s ease;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); position: relative;
+        }
+        .island-btn:hover:not(.disabled) { transform: scale(1.03); }
+        .island-btn.disabled { opacity: 0.6; cursor: not-allowed; }
+        .island-btn .badge {
+            position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.3);
+            padding: 2px 8px; border-radius: 20px; font-size: 11px;
+        }
+
+        .bg-red { background: var(--red-color); }
+        .bg-orange { background: var(--orange-color); }
+        .bg-green { background: var(--green-color); }
+        .bg-blue { background: var(--blue-color); }
+
+        /* 題目選項 */
+        .option-btn {
+            background: #ffffff; border: 2px solid #e2e8f0; border-radius: 12px;
+            padding: 14px; margin-bottom: 10px; text-align: left; font-size: 15px;
+            cursor: pointer; transition: all 0.2s; font-weight: 500; width: 100%;
+        }
+        .option-btn:hover { border-color: #94a3b8; background: #f8fafc; }
+        .option-btn.correct { background: #dcfce7; border-color: #22c55e; color: #14532d; }
+        .option-btn.wrong { background: #fee2e2; border-color: #ef4444; color: #7f1d1d; }
+
+        /* 情緒溫度計互動畫面 */
+        .thermo-layout { display: flex; gap: 30px; margin: 20px 0; align-items: center; }
+        .thermo-container {
+            width: 70px; height: 280px; background: #e2e8f0; border-radius: 35px 35px 20px 20px;
+            position: relative; padding: 5px; box-shadow: inset 3px 3px 7px rgba(0,0,0,0.15);
+            display: flex; flex-direction: column-reverse; align-items: center;
+        }
+        .thermo-bulb {
+            width: 80px; height: 80px; background: #cbd5e1; border-radius: 50%;
+            position: absolute; bottom: -40px; z-index: 1; transition: background 0.4s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15), inset -5px -5px 10px rgba(0,0,0,0.1);
+            display: flex; justify-content: center; align-items: center; font-size: 36px;
+        }
+        .mercury-track {
+            width: 36px; height: 100%; background: #f1f5f9; border-radius: 20px;
+            overflow: hidden; display: flex; flex-direction: column-reverse;
+        }
+        .mercury {
+            width: 100%; height: 0%; transition: height 0.4s ease, background 0.4s ease;
+            background: #cbd5e1;
+        }
+
+        .time-node-container { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+        .time-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #f8fafc; padding: 10px; border-radius: 12px; border: 1px solid #e2e8f0;
+        }
+        .time-label { font-weight: bold; color: #334155; width: 80px; }
+        .color-selector { display: flex; gap: 8px; }
+        .color-dot {
+            width: 28px; height: 28px; border-radius: 50%; border: 3px solid transparent;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .color-dot:hover { transform: scale(1.15); }
+        .color-dot.active { border-color: #1e293b; transform: scale(1.15); }
+
+        /* 圖表與統合報告 */
+        .chart-svg { width: 100%; height: 120px; background: #f8fafc; border-radius: 12px; margin-top: 10px; }
+        
+        /* 溫馨短評區塊 */
+        .comment-card {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border: 1px solid #bfdbfe; border-radius: 14px; padding: 16px;
+            margin-top: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+
+        .strat-card {
+            background: #f0fdf4; border-left: 5px solid #22c55e; border-radius: 8px;
+            padding: 12px; margin-top: 10px; display: flex; align-items: center; gap: 10px;
+        }
+        .strat-card.red-alert { background: #fef2f2; border-left-color: var(--red-color); }
+        .strat-card.orange-alert { background: #fff7ed; border-left-color: var(--orange-color); }
+        .strat-card.green-alert { background: #f0fdf4; border-left-color: var(--green-color); }
+        .strat-card.blue-alert { background: #eff6ff; border-left-color: var(--blue-color); }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="score-pill" id="global-score-pill">
+        <span>校園進度：<span id="score-text">0/8</span></span>
+        <div class="dot-row" id="dot-row">
+            <div class="dot" id="dot-0"></div><div class="dot" id="dot-1"></div>
+            <div class="dot" id="dot-2"></div><div class="dot" id="dot-3"></div>
+            <div class="dot" id="dot-4"></div><div class="dot" id="dot-5"></div>
+            <div class="dot" id="dot-6"></div><div class="dot" id="dot-7"></div>
+        </div>
+    </div>
+
+    <div class="screen active" id="scr-welcome">
+        <h1 style="font-size: 28px; margin-bottom: 10px;">🌡️ 四色情緒溫度計</h1>
+        <h2 style="font-size: 18px; color: #64748b; font-weight: normal;">校園人際與自我覺察整合系統</h2>
+        <p style="line-height: 1.6; color: #475569; text-align: justify; margin: 15px 0 20px;">
+            歡迎來到校園情緒導航挑戰！在學校的一天裡，我們常會經歷不同的心情溫度。本遊戲分為兩個階段：<br>
+            <strong>第一階段：</strong>前往四個情緒島嶼，破解校園真實同儕情境題。<br>
+            <strong>第二階段：</strong>解鎖專屬「情緒溫度計」，紀錄全日心理波動並產出報告。
+        </p>
+        <button class="btn" onclick="showScreen('select')">開始啟航挑戰</button>
+
+        <div class="qr-section">
+            <div class="qr-container" id="welcome-qrcode"></div>
+            <div class="qr-label">📱 掃描 QR Code 進入遊戲</div>
+            <div class="qr-url">github.com/cyysongyy/4colors-emotionalthermmeter-</div>
+        </div>
+    </div>
+
+    <div class="screen" id="scr-select">
+        <h2>🏝️ 請選擇一首情緒島嶼進行探索</h2>
+        <p style="text-align:center; color:#64748b; margin-top:0;">（必須通過全部 4 個島嶼以解鎖情緒溫度計）</p>
+        <div class="grid" id="island-grid"></div>
+        <button class="btn" id="btn-go-thermo" style="margin-top: 25px; display: none;" onclick="startThermoStage()">🔓 解鎖整合：紀錄今日情緒溫度計</button>
+    </div>
+
+    <div class="screen" id="scr-quiz">
+        <h2 id="quiz-title">情緒島嶼問答</h2>
+        <div id="quiz-body" style="flex: 1; margin-top: 10px;">
+            <p id="quiz-question" style="font-size: 16px; font-weight: bold; color: #334155; line-height: 1.5;"></p>
+            <div id="quiz-options" style="margin-top: 15px;"></div>
+        </div>
+        <div id="quiz-feedback" style="margin: 10px 0; font-weight: bold; min-height: 24px; text-align: center;"></div>
+        <button class="btn" id="btn-next-quiz" onclick="nextQuiz()" disabled>下一題</button>
+    </div>
+
+    <div class="screen" id="scr-thermo">
+        <h2>🌡️ 統合：今日校園情緒溫度計</h2>
+        <p style="color: #64748b; text-align: center; margin-top: 0;">點擊右側各時段的顏色，記錄你今天的心情溫度</p>
+        
+        <div class="thermo-layout">
+            <div class="thermo-container">
+                <div class="mercury-track">
+                    <div class="mercury" id="thermo-mercury"></div>
+                </div>
+                <div class="thermo-bulb" id="thermo-bulb">😊</div>
+            </div>
+            <div class="time-node-container" id="time-nodes"></div>
+        </div>
+        <button class="btn" id="btn-submit-thermo" onclick="generateReport()" style="margin-top: 20px;">生成今日情緒統合報告</button>
+    </div>
+
+    <div class="screen" id="scr-report">
+        <h2>📊 今日情緒統合分析報告</h2>
+        <div style="flex:1; overflow-y:auto; max-height: 380px; padding-right: 5px;">
+            <p style="font-weight: bold; margin-bottom: 5px;">📈 情緒波動溫度曲線：</p>
+            <svg class="chart-svg" id="report-svg"></svg>
+            
+            <div class="comment-card" id="report-comment-zone"></div>
+
+            <p style="font-weight: bold; margin-top: 10px; margin-bottom: 5px;">💡 自我調節防禦卡（點燈錦囊）：</p>
+            <div id="report-strategies"></div>
+        </div>
+        <button class="btn" onclick="restartGame()" style="background:#64748b;">重新進行系統評測</button>
+    </div>
+</div>
+
+<script>
+    const EMOTIONS = {
+        red:    { name: '憤怒、暴躁', emoji: '😡', color: '#dc2626', level: 4, label: 'Lv 4 高溫' },
+        orange: { name: '焦慮、緊張', emoji: '😰', color: '#ea580c', level: 3, label: 'Lv 3 偏高溫' },
+        green:  { name: '平靜、滿足', emoji: '😊', color: '#16a34a', level: 2, label: 'Lv 2 偏低溫' },
+        blue:   { name: '憂愁、失望', emoji: '😢', color: '#2563eb', level: 1, label: 'Lv 1 最低溫' }
+    };
+
+    const QUIZ_DATABASE = {
+        red: [
+            {
+                q: "分組報告時組員都在聊天擺爛，最後期限快到了，你氣到想摔課本、當場罵人。這時最安全、有效的降溫作法是？",
+                options: [
+                    { text: "當場大吼大叫宣洩情緒，讓大家知道你不好惹", isCorrect: false },
+                    { text: "啟動動態暫停，深呼吸四秒、吐氣八秒，冷靜後再跟老師反映或重新分配工作", isCorrect: true },
+                    { text: "默默忍耐不說，回家上網發文發牢騷", isCorrect: false }
+                ]
+            },
+            {
+                q: "下課玩球時，同學私底下亂傳你在作弊的流言，你感到胸口有一團無名火想揍人，此時該如何因應？",
+                options: [
+                    { text: "立刻衝過去找對方打架理論", isCorrect: false },
+                    { text: "當作沒聽到，暗中找機會弄壞他的文具", isCorrect: false },
+                    { text: "迅速離開現場去洗把臉，並尋求導師或輔導室協助澄清", isCorrect: true }
+                ]
+            }
+        ],
+        orange: [
+            {
+                q: "明天有非常重要的期末大考，你現在躺在床上緊張到心跳加快、根本睡不著，大腦拼命想著「考砸了怎麼辦」。此時最好的焦慮調節是？",
+                options: [
+                    { text: "既然睡不著就爬起來熬夜拼命讀書，讀到天亮直接去學校", isCorrect: false },
+                    { text: "整理好讀書計畫並深呼吸，告訴自己「我已經盡力了」，寫下3件已經準備好的事讓大腦安心", isCorrect: true },
+                    { text: "躲在被子裡哭泣，催眠自己明天一定會失敗", isCorrect: false }
+                ]
+            },
+            {
+                q: "老師突然宣布下週你要代表全班在全校集會上做口頭報告，你頓時感到強烈的緊張與不安，手心開始冒汗。該如何應對這個黃橘色焦慮？",
+                options: [
+                    { text: "假裝肚子痛或請假，想辦法在報告那天不要去上學", isCorrect: false },
+                    { text: "覺得自己一定會丟臉，乾脆完全不準備，上台看著辦", isCorrect: false },
+                    { text: "將長篇報告拆解成小步驟，先寫大綱，並找一兩個信任的朋友當聽眾試講以建立信心", isCorrect: true }
+                ]
+            }
+        ],
+        green: [
+            {
+                q: "早自習時間，教室裡放著輕音樂，大家都在安靜閱讀，你覺得內心很平靜、滿足。這種綠色狀態最適合做什麼？",
+                options: [
+                    { text: "趁大家不注意，找隔壁同學講話傳紙條", isCorrect: false },
+                    { text: "好好維持並享受這份平穩，並在隨手隨筆記下今天給自己的小目標", isCorrect: true },
+                    { text: "覺得太無聊了，故意弄出大聲音吸引別人注意", isCorrect: false }
+                ]
+            },
+            {
+                q: "午休時間結束，你精神飽滿且心情和諧，看到同學值日生掃地很辛苦，你怎麼發揮綠色平靜共好能量？",
+                options: [
+                    { text: "主動走過去幫忙提水桶或掃地，將感恩與平靜分享出去", isCorrect: true },
+                    { text: "坐在座位上嘲笑他地掃得不乾淨", isCorrect: false },
+                    { text: "裝作沒看到，繼續做自己的事", isCorrect: false }
+                ]
+            }
+        ],
+        blue: [
+            {
+                q: "這次期末段考你明明準備了很久，結果成績出來卻大退步，看著考卷你覺得非常憂愁與失落，此時如何處理藍色低溫情緒？",
+                options: [
+                    { text: "把考卷揉爛撕碎丟掉，假裝沒有這回事", isCorrect: false },
+                    { text: "接納自己此時的難過，寫在心情日記上，或找信任的老師討論調整讀書方法", isCorrect: true },
+                    { text: "從此放棄這個科目，上課開始睡覺", isCorrect: false }
+                ]
+            },
+            {
+                q: "下課時，你發現最要好的朋友轉去跟其他人玩，把你冷落在一旁，你覺得既失望又孤單，該怎麼辦？",
+                options: [
+                    { text: "跑去警告那群同學不准跟你的好朋友玩", isCorrect: false },
+                    { text: "主動大方加入對方的聊天話題，或者利用下課發掘其他志同道合的新朋友", isCorrect: true },
+                    { text: "趴在桌上哭一整天，跟誰都不講話", isCorrect: false }
+                ]
+            }
+        ]
+    };
+
+    const TIME_NODES = [
+        { id: 'morning', label: '早晨上學' },
+        { id: 'class',   label: '課堂學習' },
+        { id: 'lunch',   label: '午餐午休' },
+        { id: 'break',   label: '下課人際' },
+        { id: 'home',    label: '傍晚放學' }
+    ];
+
+    let state = {
+        score: 0,
+        completedIslands: new Set(),
+        currentIsland: null,
+        currentQIndex: 0,
+        thermoRecords: { morning: 'green', class: 'green', lunch: 'green', break: 'green', home: 'green' }
+    };
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(`scr-${screenId}`).classList.add('active');
+        
+        if(screenId === 'welcome') document.body.style.background = 'linear-gradient(135deg, #fefbc3, #fef08a)';
+        if(screenId === 'select') {
+            document.body.style.background = 'linear-gradient(135deg, #e0f2fe, #e0e7ff)';
+            renderIslandGrid();
+        }
+        if(screenId === 'thermo') document.body.style.background = 'linear-gradient(135deg, #faf5ff, #fae8ff)';
+        if(screenId === 'report') document.body.style.background = 'linear-gradient(135deg, #f0fdf4, #dcfce7)';
+    }
+
+    function renderIslandGrid() {
+        const grid = document.getElementById('island-grid');
+        grid.innerHTML = '';
+        
+        Object.keys(EMOTIONS).forEach(key => {
+            const emo = EMOTIONS[key];
+            const isDone = state.completedIslands.has(key);
+            const btn = document.createElement('button');
+            btn.className = `island-btn bg-${key} ${isDone ? 'disabled' : ''}`;
+            btn.innerHTML = `
+                <span style="font-size:32px;">${emo.emoji}</span>
+                <span>${emo.name}島</span>
+                <span class="badge">${isDone ? '✅ 已通關' : '⏳ 待探索'}</span>
+            `;
+            if(!isDone) {
+                btn.onclick = () => startIslandQuiz(key);
+            }
+            grid.appendChild(btn);
+        });
+
+        if(state.completedIslands.size === 4) {
+            document.getElementById('btn-go-thermo').style.display = 'block';
+        }
+    }
+
+    function startIslandQuiz(islandKey) {
+        state.currentIsland = islandKey;
+        state.currentQIndex = 0;
+        showScreen('quiz');
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        const qData = QUIZ_DATABASE[state.currentIsland][state.currentQIndex];
+        document.getElementById('quiz-title').innerText = `${EMOTIONS[state.currentIsland].emoji} ${EMOTIONS[state.currentIsland].name}島 - 第 ${state.currentQIndex + 1} 題`;
+        document.getElementById('quiz-question').innerText = qData.q;
+        
+        const optsDiv = document.getElementById('quiz-options');
+        optsDiv.innerHTML = '';
+        document.getElementById('quiz-feedback').innerText = '';
+        document.getElementById('btn-next-quiz').disabled = true;
+
+        qData.options.forEach((opt, idx) => {
+            const obtn = document.createElement('button');
+            obtn.className = 'option-btn';
+            obtn.innerText = opt.text;
+            obtn.onclick = () => handleAnswer(obtn, opt.isCorrect);
+            optsDiv.appendChild(obtn);
+        });
+    }
+
+    function handleAnswer(selectedBtn, isCorrect) {
+        const btns = document.querySelectorAll('.option-btn');
+        btns.forEach(b => b.disabled = true);
+
+        const feedback = document.getElementById('quiz-feedback');
+        if(isCorrect) {
+            selectedBtn.classList.add('correct');
+            feedback.innerHTML = "<span style='color:#22c55e;'>🎯 答對了！這能幫助平衡校園心理溫度！</span>";
+            state.score++;
+            updateGlobalScore();
+        } else {
+            selectedBtn.classList.add('wrong');
+            feedback.innerHTML = "<span style='color:#ef4444;'>❌ 哎呀，這個作法可能會讓情緒溫度失控喔。</span>";
+            const qData = QUIZ_DATABASE[state.currentIsland][state.currentQIndex];
+            const correctIdx = qData.options.findIndex(o => o.isCorrect);
+            btns[correctIdx].classList.add('correct');
+        }
+        document.getElementById('btn-next-quiz').disabled = false;
+    }
+
+    function nextQuiz() {
+        state.currentQIndex++;
+        if(state.currentQIndex < QUIZ_DATABASE[state.currentIsland].length) {
+            loadQuestion();
+        } else {
+            state.completedIslands.add(state.currentIsland);
+            showScreen('select');
+        }
+    }
+
+    function updateGlobalScore() {
+        document.getElementById('score-text').innerText = `${state.score}/8`;
+        for(let i=0; i<state.score; i++) {
+            const dot = document.getElementById(`dot-${i}`);
+            if(dot) dot.classList.add('done');
+        }
+    }
+
+    function startThermoStage() {
+        document.getElementById('global-score-pill').style.display = 'none';
+        showScreen('thermo');
+        renderTimeNodes();
+        updateThermoVisual();
+    }
+
+    function renderTimeNodes() {
+        const container = document.getElementById('time-nodes');
+        container.innerHTML = '';
+
+        TIME_NODES.forEach(node => {
+            const row = document.createElement('div');
+            row.className = 'time-row';
+            
+            let selectorHtml = '';
+            Object.keys(EMOTIONS).forEach(colorKey => {
+                const isActive = state.thermoRecords[node.id] === colorKey;
+                selectorHtml += `
+                    <div class="color-dot bg-${colorKey} ${isActive ? 'active' : ''}" 
+                         onclick="selectThermoColor('${node.id}', '${colorKey}')">
+                    </div>
+                `;
+            });
+
+            row.innerHTML = `
+                <div class="time-label">${node.label}</div>
+                <div class="color-selector">${selectorHtml}</div>
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    function selectThermoColor(nodeId, colorKey) {
+        state.thermoRecords[nodeId] = colorKey;
+        renderTimeNodes();
+        updateThermoVisual();
+    }
+
+    function updateThermoVisual() {
+        const currentSelectedColor = state.thermoRecords['home']; 
+        const emo = EMOTIONS[currentSelectedColor];
+        
+        document.getElementById('thermo-bulb').innerText = emo.emoji;
+        
+        let totalLevel = 0;
+        Object.values(state.thermoRecords).forEach(colorKey => {
+            totalLevel += EMOTIONS[colorKey].level;
+        });
+        const averageHeightPercent = (totalLevel / (TIME_NODES.length * 4)) * 100;
+        
+        const mercury = document.getElementById('thermo-mercury');
+        mercury.style.height = `${averageHeightPercent}%`;
+        
+        if(averageHeightPercent > 70) mercury.style.background = 'var(--red-color)';
+        else if(averageHeightPercent > 50) mercury.style.background = 'var(--orange-color)';
+        else if(averageHeightPercent > 35) mercury.style.background = 'var(--green-color)';
+        else mercury.style.background = 'var(--blue-color)';
+    }
+
+    // 動態分析全日溫度特徵，並產出溫馨心靈鼓勵短評
+    function getPsychologyComment() {
+        const records = Object.values(state.thermoRecords);
+        const counts = { red: 0, orange: 0, green: 0, blue: 0 };
+        records.forEach(r => counts[r]++);
+
+        const firstNodeColor = state.thermoRecords['morning'];
+        const lastNodeColor = state.thermoRecords['home'];
+
+        // 策略 1：全天綠色（完美平穩）
+        if (counts.green === TIME_NODES.length) {
+            return `<strong>💚 導航員心靈小語：</strong>今天你在校園裡展現了極高的一致性與和諧度！平靜與踏實是極具保護力的心靈基底。願你能帶著這份從容，把微笑和溫暖也分享給身邊那些可能正在面臨壓力的小夥伴，你是班上無形中的安定核心喔！✨`;
+        }
+        
+        // 策略 2：心情逐漸回溫、好轉
+        if (EMOTIONS[lastNodeColor].level > EMOTIONS[firstNodeColor].level && (counts.red > 0 || counts.orange > 0 || counts.blue > 0)) {
+            return `<strong>📈 導航員心靈小語：</strong>太棒了！雖然今天在某些時段可能遇到了小亂流（不論是課堂焦慮還是同儕誤會），但你成功調適了自己，讓心情在放學前「多雲轉晴」！這種強大的心理韌性是校園生活中最寶貴的資產。給今天不輕言放棄、努力調節溫度的自己一個大大的掌聲吧！🌸`;
+        }
+
+        // 策略 3：高溫警報偏多（紅/橘過多）
+        if (counts.red + counts.orange >= 3) {
+            return `<strong>🌋 導航員心靈小語：</strong>今天在校園裡，你的心靈試管似乎有些處於高溫沸騰狀態呢。不論是人際摩擦帶來的憤怒，還是大考報告帶來的緊繃，這都說明你今天過得很不容易、非常努力在因應。請記得：想生氣或不安都是正常的，但一定要給自己安排 3 分鐘的「深呼吸課堂降溫點」。今晚好好泡個熱水澡、聽首音樂，你已經做得很好，辛苦了！💪`;
+        }
+
+        // 策略 4：低溫憂愁偏多（藍色過多）
+        if (counts.blue >= 3) {
+            return `<strong>💧 導航員心靈小語：</strong>今天你的心靈溫度落在了微涼的低溫區。是不是遇到了段考不順，或是被好朋友冷落的孤單時刻呢？看著藍色的點點，導航員想溫柔地抱抱你。別把失落悄悄藏在心底，流淚和難過並不是軟弱，而是心靈在排毒。明天試著找導師、家長或輔導室聊聊天，我們都在身後陪伴你，明天會是嶄新的一天！🌱`;
+        }
+
+        // 策略 5：多重起伏（晴時多雲偶陣雨）
+        return `<strong>🌈 導航員心靈小語：</strong>今天你經歷了一個色彩斑斕、喜怒哀樂俱全的豐富校園旅程！情緒本來就像天氣一樣有晴有雨、高低起伏，這正是生活最真實的樣貌。最重要的是，你今天非常有勇氣地面對並紀錄了它們。請繼續保持這份自我覺察的超能力，不論明天溫度如何變化，你都有能力成為自己最棒的心靈掌舵手！👑`;
+    }
+
+    function generateReport() {
+        showScreen('report');
+        const svg = document.getElementById('report-svg');
+        svg.innerHTML = '';
+
+        const width = svg.clientWidth || 590;
+        const height = 120;
+        const padding = 40;
+        const pointsCount = TIME_NODES.length;
+        
+        let points = [];
+        TIME_NODES.forEach((node, idx) => {
+            const colorKey = state.thermoRecords[node.id];
+            const level = EMOTIONS[colorKey].level;
+            
+            const x = padding + (idx * (width - padding * 2) / (pointsCount - 1));
+            const y = height - (padding + ((level - 1) * (height - padding * 2) / 3));
+            points.push({ x, y, color: EMOTIONS[colorKey].color, emoji: EMOTIONS[colorKey].emoji, label: node.label });
+        });
+
+        for (let i = 1; i <= 4; i++) {
+            const yLine = height - (padding + ((i - 1) * (height - padding * 2) / 3));
+            svg.innerHTML += `<line x1="0" y1="${yLine}" x2="${width}" y2="${yLine}" stroke="#e2e8f0" stroke-dasharray="4,4"/>`;
+        }
+
+        let pathD = `M ${points[0].x} ${points[0].y}`;
+        for(let i=1; i<points.length; i++) {
+            pathD += ` L ${points[i].x} ${points[i].y}`;
+        }
+        svg.innerHTML += `<path d="${pathD}" fill="none" stroke="#6366f1" stroke-width="3" stroke-linejoin="round"/>`;
+
+        points.forEach(p => {
+            svg.innerHTML += `<text x="${p.x}" y="${height - 10}" font-size="11" text-anchor="middle" fill="#64748b">${p.label}</text>`;
+            svg.innerHTML += `<circle cx="${p.x}" cy="${p.y}" r="6" fill="${p.color}" stroke="#fff" stroke-width="2"/>`;
+            svg.innerHTML += `<text x="${p.x}" y="${p.y - 12}" font-size="14" text-anchor="middle">${p.emoji}</text>`;
+        });
+
+        // 注入動態溫馨鼓勵短評
+        document.getElementById('report-comment-zone').innerHTML = `
+            <p style="margin:0; line-height:1.6; font-size:14.5px; color:#1e40af; text-align:justify;">
+                ${getPsychologyComment()}
+            </p>
+        `;
+
+        const usedColors = [...new Set(Object.values(state.thermoRecords))];
+        const stratContainer = document.getElementById('report-strategies');
+        stratContainer.innerHTML = '';
+
+        const STRATEGIES = {
+            red: { title: "🔴 紅色策略（高溫防禦）", text: "當感覺組員擺爛或同儕誤會想摔東西時，切記啟動「動態暫停」。立刻遠離現場洗把臉，使用4-7-8呼吸法，待溫度降下後再尋求導師調解。" },
+            orange: { title: "🟠 橘色策略（焦慮緊張調解）", text: "明天大考或突然要在全校集會報告時，焦慮和緊張是正常的。不要熬夜通宵！試著把任務「拆解成多個小步驟」，每次只專注眼前的一小步，就能有效減輕心理壓力。" },
+            green: { title: "🟢 綠色策略（平穩延續）", text: "早自習和午休的平穩是非常棒的心理基底。這時最適合把內心的踏實轉為行動，主動協助需要幫助的值日生或同學，分享和諧能量。" },
+            blue: { title: "🔵 藍色策略（低溫陪伴）", text: "考試退步或被好朋友冷落時，憂愁與失望是自然的。不要揉爛考卷，試著把心事寫在心情日記，或預約輔導室傾訴，發掘新出路。" }
+        };
+
+        usedColors.forEach(color => {
+            const card = document.createElement('div');
+            card.className = `strat-card ${color}-alert`;
+            card.innerHTML = `
+                <div>
+                    <strong style="color:${EMOTIONS[color].color}; display:block; margin-bottom:4px;">${STRATEGIES[color].title}</strong>
+                    <span style="font-size:14px; color:#334155; line-height:1.4;">${STRATEGIES[color].text}</span>
+                </div>
+            `;
+            stratContainer.appendChild(card);
+        });
+    }
+
+    function restartGame() {
+        state.score = 0;
+        state.completedIslands.clear();
+        state.currentIsland = null;
+        state.currentQIndex = 0;
+        state.thermoRecords = { morning: 'green', class: 'green', lunch: 'green', break: 'green', home: 'green' };
+        
+        document.getElementById('score-text').innerText = "0/8";
+        document.querySelectorAll('.dot').forEach(d => d.classList.remove('done'));
+        document.getElementById('global-score-pill').style.display = 'flex';
+        document.getElementById('btn-go-thermo').style.display = 'none';
+
+        showScreen('welcome');
+    }
+
+    window.onload = function() {
+        try {
+            new QRCode(document.getElementById('welcome-qrcode'), {
+                text: 'https://github.com/cyysongyy/4colors-emotionalthermmeter-',
+                width: 130,
+                height: 130,
+                colorDark: '#1e3a8a',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        } catch(e) {
+            document.getElementById('welcome-qrcode').innerHTML = 
+                '<p style="font-size:12px; color:#94a3b8; padding:20px;">QR Code 載入中...</p>';
+        }
+    }
+</script>
+
+</body>
+</html>
