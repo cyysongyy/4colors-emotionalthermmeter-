@@ -185,7 +185,7 @@
         <div class="qr-section">
             <div class="qr-container" id="welcome-qrcode"></div>
             <div class="qr-label">📱 掃描 QR Code 進入遊戲</div>
-            <div class="qr-url">github.com/cyysongyy/4colors-emotionalthermmeter-</div>
+            <div class="qr-url">cyysongyy.github.io/4colors-emotionalthermmeter-/</div>
         </div>
     </div>
 
@@ -197,7 +197,7 @@
     </div>
 
     <div class="screen" id="scr-quiz">
-        <h2 id="quiz-title">情緒島嶼問答</h2>
+        <h2>情緒島嶼問答</h2>
         <div id="quiz-body" style="flex: 1; margin-top: 10px;">
             <p id="quiz-question" style="font-size: 16px; font-weight: bold; color: #334155; line-height: 1.5;"></p>
             <div id="quiz-options" style="margin-top: 15px;"></div>
@@ -383,9 +383,6 @@
 
     function loadQuestion() {
         const qData = QUIZ_DATABASE[state.currentIsland][state.currentQIndex];
-        document.getElementById('quiz-title').innerText = `${EMOTIONS[state.currentIsland].emoji} ${EMOTIONS[state.currentIsland].name}島 - 第 ${state.currentQIndex + 1} 題`;
-        document.getElementById('quiz-question').innerText = qData.q;
-        
         const optsDiv = document.getElementById('quiz-options');
         optsDiv.innerHTML = '';
         document.getElementById('quiz-feedback').innerText = '';
@@ -498,7 +495,6 @@
         else mercury.style.background = 'var(--blue-color)';
     }
 
-    // 動態分析全日溫度特徵，並產出溫馨心靈鼓勵短評
     function getPsychologyComment() {
         const records = Object.values(state.thermoRecords);
         const counts = { red: 0, orange: 0, green: 0, blue: 0 };
@@ -507,27 +503,22 @@
         const firstNodeColor = state.thermoRecords['morning'];
         const lastNodeColor = state.thermoRecords['home'];
 
-        // 策略 1：全天綠色（完美平穩）
         if (counts.green === TIME_NODES.length) {
             return `<strong>💚 導航員心靈小語：</strong>今天你在校園裡展現了極高的一致性與和諧度！平靜與踏實是極具保護力的心靈基底。願你能帶著這份從容，把微笑和溫暖也分享給身邊那些可能正在面臨壓力的小夥伴，你是班上無形中的安定核心喔！✨`;
         }
         
-        // 策略 2：心情逐漸回溫、好轉
         if (EMOTIONS[lastNodeColor].level > EMOTIONS[firstNodeColor].level && (counts.red > 0 || counts.orange > 0 || counts.blue > 0)) {
             return `<strong>📈 導航員心靈小語：</strong>太棒了！雖然今天在某些時段可能遇到了小亂流（不論是課堂焦慮還是同儕誤會），但你成功調適了自己，讓心情在放學前「多雲轉晴」！這種強大的心理韌性是校園生活中最寶貴的資產。給今天不輕言放棄、努力調節溫度的自己一個大大的掌聲吧！🌸`;
         }
 
-        // 策略 3：高溫警報偏多（紅/橘過多）
         if (counts.red + counts.orange >= 3) {
             return `<strong>🌋 導航員心靈小語：</strong>今天在校園裡，你的心靈試管似乎有些處於高溫沸騰狀態呢。不論是人際摩擦帶來的憤怒，還是大考報告帶來的緊繃，這都說明你今天過得很不容易、非常努力在因應。請記得：想生氣或不安都是正常的，但一定要給自己安排 3 分鐘的「深呼吸課堂降溫點」。今晚好好泡個熱水澡、聽首音樂，你已經做得很好，辛苦了！💪`;
         }
 
-        // 策略 4：低溫憂愁偏多（藍色過多）
         if (counts.blue >= 3) {
-            return `<strong>💧 導航員心靈小語：</strong>今天你的心靈溫度落在了微涼的低溫區。是不是遇到了段考不順，或是被好朋友冷落的孤單時刻呢？看著藍色的點點，導航員想溫柔地抱抱你。別把失落悄悄藏在心底，流淚和難過並不是軟弱，而是心靈在排毒。明天試著找導師、家長或輔導室聊聊天，我們都在身後陪伴你，明天會是嶄新的一天！🌱`;
+            return `<strong>💧 導航員心靈小語：</strong>今天你的心靈溫度落落在微涼的低溫區。是不是遇到了段考不順，或是被好朋友冷落的孤單時刻呢？看著藍色的點點，導航員想溫柔地抱抱你。別把失落悄悄藏在心底，流淚和難過並不是軟弱，而是心靈在排毒。明天試著找導師、家長或輔導室聊聊天，我們都在身後陪伴你，明天會是嶄新的一天！🌱`;
         }
 
-        // 策略 5：多重起伏（晴時多雲偶陣雨）
         return `<strong>🌈 導航員心靈小語：</strong>今天你經歷了一個色彩斑斕、喜怒哀樂俱全的豐富校園旅程！情緒本來就像天氣一樣有晴有雨、高低起伏，這正是生活最真實的樣貌。最重要的是，你今天非常有勇氣地面對並紀錄了它們。請繼續保持這份自我覺察的超能力，不論明天溫度如何變化，你都有能力成為自己最棒的心靈掌舵手！👑`;
     }
 
@@ -568,12 +559,7 @@
             svg.innerHTML += `<text x="${p.x}" y="${p.y - 12}" font-size="14" text-anchor="middle">${p.emoji}</text>`;
         });
 
-        // 注入動態溫馨鼓勵短評
-        document.getElementById('report-comment-zone').innerHTML = `
-            <p style="margin:0; line-height:1.6; font-size:14.5px; color:#1e40af; text-align:justify;">
-                ${getPsychologyComment()}
-            </p>
-        `;
+        document.getElementById('report-comment-zone').innerHTML = `<p style="margin:0; line-height:1.6; font-size:14.5px; color:#1e40af; text-align:justify;">${getPsychologyComment()}</p>`;
 
         const usedColors = [...new Set(Object.values(state.thermoRecords))];
         const stratContainer = document.getElementById('report-strategies');
@@ -617,7 +603,7 @@
     window.onload = function() {
         try {
             new QRCode(document.getElementById('welcome-qrcode'), {
-                text: 'https://github.com/cyysongyy/4colors-emotionalthermmeter-',
+                text: 'https://cyysongyy.github.io/4colors-emotionalthermmeter-/',
                 width: 130,
                 height: 130,
                 colorDark: '#1e3a8a',
