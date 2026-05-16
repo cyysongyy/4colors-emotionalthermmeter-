@@ -197,7 +197,7 @@
     </div>
 
     <div class="screen" id="scr-quiz">
-        <h2>情緒島嶼問答</h2>
+        <h2 id="quiz-title">情緒島嶼問答</h2>
         <div id="quiz-body" style="flex: 1; margin-top: 10px;">
             <p id="quiz-question" style="font-size: 16px; font-weight: bold; color: #334155; line-height: 1.5;"></p>
             <div id="quiz-options" style="margin-top: 15px;"></div>
@@ -383,6 +383,11 @@
 
     function loadQuestion() {
         const qData = QUIZ_DATABASE[state.currentIsland][state.currentQIndex];
+        
+        // 修正重點：確保題目文字在每次載入時被正確渲染至 DOM
+        document.getElementById('quiz-title').innerText = `${EMOTIONS[state.currentIsland].emoji} ${EMOTIONS[state.currentIsland].name}島 - 第 ${state.currentQIndex + 1} 題`;
+        document.getElementById('quiz-question').innerText = qData.q;
+        
         const optsDiv = document.getElementById('quiz-options');
         optsDiv.innerHTML = '';
         document.getElementById('quiz-feedback').innerText = '';
@@ -519,7 +524,7 @@
             return `<strong>💧 導航員心靈小語：</strong>今天你的心靈溫度落落在微涼的低溫區。是不是遇到了段考不順，或是被好朋友冷落的孤單時刻呢？看著藍色的點點，導航員想溫柔地抱抱你。別把失落悄悄藏在心底，流淚和難過並不是軟弱，而是心靈在排毒。明天試著找導師、家長或輔導室聊聊天，我們都在身後陪伴你，明天會是嶄新的一天！🌱`;
         }
 
-        return `<strong>🌈 導航員心靈小語：</strong>今天你經歷了一個色彩斑斕、喜怒哀樂俱全的豐富校園旅程！情緒本來就像天氣一樣有晴有雨、高低起伏，這正是生活最真實的樣貌。最重要的是，你今天非常有勇氣地面對並紀錄了它們。請繼續保持這份自我覺察的超能力，不論明天溫度如何變化，你都有能力成為自己最棒的心靈掌舵手！👑`;
+        return `<strong>🌈 導航員心靈小語：</strong>今天你經歷了一個色彩斑斕、喜怒哀樂俱全的豐富校園旅程！情緒本來就像天氣一樣有晴有雨、高低起伏，這正是生活最真實的樣貌。最重要的是，你今天非常有勇氣地面對並紀錄了貼們。請繼續保持這份自我覺察的超能力，不論明天溫度如何變化，你都有能力成為自己最棒的心靈掌舵手！👑`;
     }
 
     function generateReport() {
